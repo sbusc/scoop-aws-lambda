@@ -10,7 +10,8 @@ import logPrefix from 'loglevel-plugin-prefix'
 import nunjucks from 'nunjucks'
 import { Address4, Address6 } from '@laverdet/beaugunderson-ip-address'
 import { v4 as uuidv4 } from 'uuid'
-import { chromium } from 'playwright'
+import * as playwright from 'playwright-aws-lambda'
+import * as playwrightCore from 'playwright-core'
 import { getOSInfo } from 'get-os-info'
 
 import { exec } from './utils/exec.js'
@@ -594,11 +595,17 @@ export class Scoop {
     await this.intercepter.setup()
 
     // Playwright init + pass proxy info to Chromium
-    const userAgent = chromium._playwright.devices['Desktop Chrome'].userAgent + options.userAgentSuffix
+    // sbusc: changed to playwright-core
+    const userAgent = playwrightCore.devices['Desktop Chrome'].userAgent + options.userAgentSuffix
+    // Original code
+    // const userAgent = chromium._playwright.devices['Desktop Chrome'].userAgent + options.userAgentSuffix
     this.provenanceInfo.userAgent = userAgent
     this.log.info(`User Agent used for capture: ${userAgent}`)
 
-    this.#browser = await chromium.launch({
+    // sbusc: changed to playwright-core
+    this.#browser = await playwright.launchChromium({
+      // Original code
+    // this.#browser = await chromium.launch({
       headless: options.headless
     })
 
