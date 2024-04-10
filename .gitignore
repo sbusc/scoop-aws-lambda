@@ -1,4 +1,6 @@
+# local OS and sensitive files
 .DS_Store
+*.pem
 
 test.js
 tmp.js
@@ -10,10 +12,21 @@ examples/
 executables/
 tmp/
 
+# local env files
 .env
-
 .venv/
 env/
 *.pem
 __pycache__/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# test artifacts
+*.warc
+
+# misc
+.vscode
+
 
