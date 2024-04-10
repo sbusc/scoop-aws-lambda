@@ -1,7 +1,7 @@
 {
-  "name": "@harvard-lil/scoop",
-  "version": "0.6.13",
-  "description": "🍨 High-fidelity, browser-based, single-page web archiving library and CLI.",
+  "name": "@sbusc/scoop-aws-lambda",
+  "version": "0.0.1",
+  "description": "A fork of @harvard-lil/scoop that is optimized for running on AWS lambda",
   "main": "Scoop.js",
   "type": "module",
   "bin": {
