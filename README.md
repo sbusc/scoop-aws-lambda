@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/@harvard-lil%2Fscoop.svg)](https://badge.fury.io/js/@harvard-lil%2Fscoop) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com) [![Linting](https://github.com/harvard-lil/scoop/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/harvard-lil/scoop/actions/workflows/lint.yml) [![Test suite](https://github.com/harvard-lil/scoop/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/harvard-lil/scoop/actions/workflows/test.yml)
 
-High-fidelity, browser-based, single-page web archiving library and CLI. 
+A fork of [@harvard-lil/scoop](https://www.npmjs.com/package/@harvard-lil/scoop) that is optimized for running on AWS lambda.
 
 **Use it in the terminal...**
 ```bash

@@ -4,6 +4,7 @@
   "description": "A fork of @harvard-lil/scoop that is optimized for running on AWS lambda",
   "main": "Scoop.js",
   "type": "module",
+  "types": "Scoop.d.ts",
   "bin": {
     "scoop": "bin/cli.js"
   },
@@ -24,12 +25,18 @@
   "standard": {
     "globals": [
       "Headers"
+    ],
+    "ignore": [
+      "**/*.ts",
+      "**/*.tsx"
     ]
   },
   "scripts": {
     "postinstall": "bash postinstall.sh",
-    "lint": "standard",
-    "lint-autofix": "standard --fix",
+    "lint:js": "standard",
+    "lint:ts": "eslint '**/*.ts'",
+    "lint": "npm run lint:js && npm run lint:ts",
+    "lint-autofix": "standard --fix && eslint '**/*.ts' --fix",
     "test": "node --test",
     "dev-signer": "echo 'TEST_WACZ_SIGNING_URL=http://127.0.0.1:5000/sign' > .env ; cd .services/signer ; bash ./run.sh",
     "publish-util": "cd .services/publish ; bash ./run.sh"
@@ -65,12 +72,16 @@
   "devDependencies": {
     "@godaddy/dmd": "^1.0.4",
     "@types/node": "^20.4.5",
+    "@typescript-eslint/eslint-plugin": "^7.6.0",
+    "@typescript-eslint/parser": "^7.6.0",
     "adm-zip": "^0.5.10",
     "detect-port": "^1.5.1",
     "docdash": "^2.0.1",
     "dotenv": "^16.0.3",
+    "eslint": "^8.57.0",
     "express": "^4.18.2",
     "semver": "^7.5.1",
-    "standard": "^17.1.0"
+    "standard": "^17.1.0",
+    "typescript": "^5.4.5"
   }
 }
