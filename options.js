@@ -74,7 +74,9 @@ export const defaults = {
 
   publicIpResolverEndpoint: 'https://icanhazip.com',
   ytDlpPath: `${CONSTANTS.EXECUTABLES_PATH}yt-dlp`,
-  cripPath: `${CONSTANTS.EXECUTABLES_PATH}crip`
+  cripPath: `${CONSTANTS.EXECUTABLES_PATH}crip`,
+  // sbusc: added
+  behaviorsPath: './node_modules/browsertrix-behaviors/dist/behaviors.js'
 }
 
 /**

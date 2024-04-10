@@ -292,11 +292,18 @@ export class Scoop {
         setup: async (page) => {
           // Determine path of `behaviors.js`
           let behaviorsPath = './node_modules/browsertrix-behaviors/dist/behaviors.js'
-
+          // sbusc: added to make behaviorsPath configurable
+          if (options.behaviorsPath) {
+            console.log(`Setting custom behaviorsPath: ${options.behaviorsPath}`)
+            behaviorsPath = options.behaviorsPath
+          }
           try {
             await access(behaviorsPath)
           } catch (_err) {
-            behaviorsPath = `${CONSTANTS.BASE_PATH}/node_modules/browsertrix-behaviors/dist/behaviors.js`
+            console.log(`Could not access custom behaviorsPath: ${options.behaviorsPath}`)
+            const fallbackPath = `${CONSTANTS.BASE_PATH}/node_modules/browsertrix-behaviors/dist/behaviors.js`
+            console.log(`Setting behaviorsPath to default: ${fallbackPath}`)
+            behaviorsPath = fallbackPath
           }
 
           await page.addInitScript({
