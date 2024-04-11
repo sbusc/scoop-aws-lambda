@@ -78,7 +78,11 @@ export const LOGGING_COLORS = {
  * @type {object}
  */
 export const PACKAGE_INFO = Object.freeze(
-  JSON.parse(await fs.readFile(join(BASE_PATH, 'package.json')))
+  // sbusc encapsulated the async function in an IIFE
+  (async () => {
+    // Your async code here, including top-level awaits
+    JSON.parse(await fs.readFile(join(BASE_PATH, 'package.json')))
+  })()
 )
 
 /**
