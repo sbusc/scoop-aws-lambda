@@ -562,30 +562,34 @@ export class Scoop {
     this.startedAt = new Date()
     this.state = Scoop.states.SETUP
     const options = this.options
+    let tmpFolderPath = CONSTANTS.TMP_PATH
+    if (options.tmpFolderPath) {
+      tmpFolderPath = options.tmpFolderPath
+    }
 
     // Create "base" temporary folder if it doesn't exist
     let tmpDirExists = false
     try {
-      await access(CONSTANTS.TMP_PATH)
+      await access(tmpFolderPath)
       tmpDirExists = true
     } catch (_err) {
-      this.log.info(`Base temporary folder ${CONSTANTS.TMP_PATH} does not exist or cannot be accessed. Scoop will attempt to create it.`)
+      this.log.info(`Base temporary folder ${tmpFolderPath} does not exist or cannot be accessed. Scoop will attempt to create it.`)
     }
 
     if (!tmpDirExists) {
       try {
-        await mkdir(CONSTANTS.TMP_PATH)
-        await access(CONSTANTS.TMP_PATH, fsConstants.W_OK)
+        await mkdir(tmpFolderPath)
+        await access(tmpFolderPath, fsConstants.W_OK)
         tmpDirExists = true
       } catch (err) {
-        this.log.warn(`Error while creating base temporary folder ${CONSTANTS.TMP_PATH} ((${formatErrorMessage(err)})).`)
+        this.log.warn(`Error while creating base temporary folder ${tmpFolderPath} ((${formatErrorMessage(err)})).`)
         this.log.trace(err)
       }
     }
 
     // Create captures-specific temporary folder under base temporary folder
     try {
-      this.captureTmpFolderPath = await mkdtemp(CONSTANTS.TMP_PATH)
+      this.captureTmpFolderPath = await mkdtemp(tmpFolderPath)
       this.captureTmpFolderPath += '/'
       await access(this.captureTmpFolderPath, fsConstants.W_OK)
 

@@ -76,7 +76,8 @@ export const defaults = {
   ytDlpPath: `${CONSTANTS.EXECUTABLES_PATH}yt-dlp`,
   cripPath: `${CONSTANTS.EXECUTABLES_PATH}crip`,
   // sbusc: added
-  behaviorsPath: './node_modules/browsertrix-behaviors/dist/behaviors.js'
+  behaviorsPath: './node_modules/browsertrix-behaviors/dist/behaviors.js',
+  tmpFolderPath: ''
 }
 
 /**
