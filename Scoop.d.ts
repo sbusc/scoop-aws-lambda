@@ -31,6 +31,6 @@
             captureWindowX: number; 
             captureWindowY: number;
             behaviorsPath: string;
-            tmpFolderPath: string
+            tmpFolderPath: string;
         }): any;
     }

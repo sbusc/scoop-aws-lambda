@@ -41,7 +41,7 @@
  * @property {string} ytDlpPath="./executables/yt-dlp" - Path to the yt-dlp executable to be used. (https://github.com/yt-dlp/yt-dlp)
  * @property {string} cripPath="./executables/crip" - Path to the crip executable to be used. (https://github.com/Hakky54/certificate-ripper)
  * //sbusc: added
- * @property {string} behaviorsPath="./node_modules/browsertrix-behaviors/dist/behaviors.js" - Custom path to the behaviors script to be used.
+ * @property {string} behaviorsPath - Custom path to the behaviors script to be used.
  * @property {string} tmpFolderPath - Custom path for temporary files
  *
  */
