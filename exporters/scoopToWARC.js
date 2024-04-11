@@ -37,7 +37,7 @@ export async function scoopToWARC (capture, gzip = false) {
 
   // Check capture state
   if (!(capture instanceof Scoop) || !validStates.includes(capture.state)) {
-    throw new Error('"capture" must be a partial or complete Scoop capture object.')
+    throw new Error('"capture" must be a partial or complete Scoop capture object. State is ' + capture.state)
   }
 
   //
