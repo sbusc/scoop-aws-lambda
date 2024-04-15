@@ -24,7 +24,7 @@ try {
     captureWindowY: 480,
     intercepter: 'AttesterProxy'
   }, attesterOptions)
-6
+
   const warc = await capture.toWARC()
   await fs.writeFile('archive.warc', Buffer.from(warc))
 } catch (err) {

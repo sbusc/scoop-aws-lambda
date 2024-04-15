@@ -21,10 +21,12 @@ export class AttesterProxy extends ScoopProxy {
       /** @type {CustomHeaders} */
     customHeaders
     attester
+    log
 
 
     constructor(options) {
         super(options); // Pass options to the parent constructor
+        this.log = options.log
         if(options.customHeaders)
             this.customHeaders = options.customHeaders;
           if(options.attester)  
@@ -68,8 +70,8 @@ export class AttesterProxy extends ScoopProxy {
           
           if (exchange) {
             exchange.responseParsed = proxyResponse
-            console.log("Exchange found for " + request.url + " with headers " + JSON.stringify(request.headers))
-            console.log("Response has headers "  + JSON.stringify(proxyResponse.headers))
+            this.log.debug("Exchange found for " + request.url + " with headers " + JSON.stringify(request.headers))
+            this.log.debug("Response has headers "  + JSON.stringify(proxyResponse.headers))
           }
 
           // Pipe the proxy's response directly back to the original client
@@ -84,18 +86,13 @@ export class AttesterProxy extends ScoopProxy {
       request.pipe(proxyReq);  // Forward the client's request body to the proxy
   
       proxyReq.on('error', (err) => {
-          console.error('Request to forward proxy failed:', err);
+          this.log.error('Request to forward proxy failed:', err);
           response.writeHead(502, 'Bad Gateway');
           response.end('Failed to connect to the forward proxy');
       });
       }
 
       onResponse (response, request) {
-        // there will not be an exchange with this request if we're, for instance, not recording
-        // const exchange = this.exchanges.find(ex => ex.requestParsed === request)
-    
-        // if (exchange) {
-        //   exchange.responseParsed = response
-        // }
+        // override the super function with nothing
       }
 }
