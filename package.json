@@ -2,7 +2,7 @@
   "name": "@sbusc/scoop-aws-lambda",
   "version": "0.0.9",
   "description": "A fork of @harvard-lil/scoop that is optimized for running on AWS lambda",
-  "main": "Scoop.js",
+  "main": "index.js",
   "type": "module",
   "types": "Scoop.d.ts",
   "bin": {
