@@ -4,7 +4,7 @@
   "description": "A fork of @harvard-lil/scoop that is optimized for running on AWS lambda",
   "main": "index.js",
   "type": "module",
-  "types": "Scoop.d.ts",
+  "types": "types/index.d.ts",
   "bin": {
     "scoop": "bin/cli.js"
   },
