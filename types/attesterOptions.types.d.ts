@@ -1,20 +1,20 @@
 // attesterOptions.types.d.ts
 
 // Define the forwardProxy info
-type forwardProxy = {
+export type forwardProxy = {
     host: string;
     port: number;
     auth?: attesterAuth;
 };
-interface attesterAuth {
+export interface attesterAuth {
     type: string;
 }
-interface attesterAuthBasic extends attesterAuth {
+export interface attesterAuthBasic extends attesterAuth {
     type: 'basic';
     username: string;
     password: string;
 }
-interface attesterAuthBearer extends attesterAuth {
+export interface attesterAuthBearer extends attesterAuth {
     type: 'bearer';
     token: string;
 }
