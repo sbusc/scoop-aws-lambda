@@ -20,11 +20,15 @@ import net from 'net' // eslint-disable-line
 export class AttesterProxy extends ScoopProxy {
       /** @type {CustomHeaders} */
     customHeaders
+    attester
+
 
     constructor(options) {
         super(options); // Pass options to the parent constructor
         if(options.customHeaders)
             this.customHeaders = options.customHeaders;
+          if(options.attester)  
+            this.attester = options.attester;
       }
     
       onRequest(request, response) {
@@ -42,8 +46,8 @@ export class AttesterProxy extends ScoopProxy {
         request.url = fullUrl;
     
         // Setting the host to the forward proxy
-        const forwardProxyHost = 'localhost';
-        const forwardProxyPort = 8080;
+        const forwardProxyHost = this.attester.forwardProxy.host;
+        const forwardProxyPort = this.attester.forwardProxy.port;
         this.customHeaders.getCustomHeaders('request').forEach((header) => {
           request.headers[header.name] = header.value;
         })

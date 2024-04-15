@@ -10,9 +10,7 @@ let attesterOptions = {
         type: 'bearer',
         token: 'c4fbc9216be6e32e015000348a73ecfa5431e76110c320a48897be03d7cabaf8a4fa9232a69e4a05c85170422792a8ecb07c6b2cccb66d1aae5780ff69610fcd'
     }    
-},
-  
-
+}
 }
 
 try {
