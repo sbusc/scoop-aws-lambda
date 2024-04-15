@@ -22,8 +22,11 @@ import * as CONSTANTS from './constants.js'
 import * as intercepters from './intercepters/index.js'
 import * as exporters from './exporters/index.js'
 import * as importers from './importers/index.js'
+import * as attesters from './attesters/index.js'
 import { filterOptions, defaults } from './options.js'
 import { formatErrorMessage } from './utils/formatErrorMessage.js'
+import { CustomHeaders } from './CustomHeaders.js'
+import { StandardAttester } from './attesters/standardAttester.js'
 
 nunjucks.configure(CONSTANTS.TEMPLATES_PATH)
 
@@ -98,6 +101,20 @@ export class Scoop {
    * @type {ScoopOptions}
    */
   options = {}
+
+  /**
+   * sbusc: added
+   * Current attester instance
+   * @type {CustomHeaders}
+   */
+  customHeaders
+
+  /**
+   * sbusc: added
+   * Current attester instance
+   * @type {attesters.Attester}
+   */
+  attester
 
   /**
    * Returns a copy of Scoop's default settings.
@@ -190,12 +207,21 @@ export class Scoop {
   /**
    * @param {string} url - Must be a valid HTTP(S) url.
    * @param {?ScoopOptions} [options={}] - See {@link ScoopOptions}.
+   * @param {?attesters.AttesterOptions} attesterOptions - See {@link AttesterOptions}.
    */
-  constructor (url, options = {}) {
+  constructor (url, options = {}, attesterOptions) {
     this.options = filterOptions(options)
     this.blocklist = this.options.blocklist.map(castBlocklistMatcher)
     this.url = this.filterUrl(url)
     this.targetUrlResolved = this.url
+
+    
+    //sbusc: added
+    this.customHeaders = new CustomHeaders()
+    if(attesterOptions) {
+      this.attester = Scoop.loadAttester(attesterOptions)
+      this.attester.addCustomHeaders(this.customHeaders);
+    }
 
     // Logging setup (level, output formatting)
     logPrefix.reg(this.log)
@@ -216,10 +242,11 @@ export class Scoop {
    *
    * @param {string} url - Must be a valid HTTP(S) url.
    * @param {ScoopOptions} [options={}] - See {@link ScoopOptions}.
+   * @param {attesters.AttesterOptions} attesterOptions
    * @returns {Promise<Scoop>}
    */
-  static async capture (url, options) {
-    const instance = new Scoop(url, options)
+  static async capture (url, options, attesterOptions) {
+    const instance = new Scoop(url, options, attesterOptions)
     await instance.capture()
     return instance
   }
@@ -243,6 +270,7 @@ export class Scoop {
 
     /** @type {CaptureStep[]} */
     const steps = []
+
 
     //
     // Prepare capture steps
@@ -613,12 +641,14 @@ export class Scoop {
     this.provenanceInfo.userAgent = userAgent
     this.log.info(`User Agent used for capture: ${userAgent}`)
 
-    // sbusc: changed to playwright-core
-    this.#browser = await playwright.launchChromium({
-      // Original code
-    // this.#browser = await chromium.launch({
+    let chromiumOptions = {
       headless: options.headless
-    })
+    }
+        
+    // sbusc: changed to playwright-core
+    this.#browser = await playwright.launchChromium(chromiumOptions)
+      // Original code
+    // this.#browser = await chromium.launch({...
 
     const context = await this.#browser.newContext({
       ...this.intercepter.contextOptions,
@@ -661,6 +691,22 @@ export class Scoop {
     await rm(this.captureTmpFolderPath, { recursive: true, force: true })
   }
 
+  /**
+   * Creates an Attester-Object based on the given options.
+   *
+   *
+   * @param {attesters.AttesterOptions} attesterOptions - Options for the attester
+   * @returns {attesters.Attester} - The attester instance
+   * @private
+   */
+  static loadAttester (attesterOptions) {
+    // sbusc
+    if(attesterOptions.attesterType != 'standard') 
+      throw new Error('Only standard attester is supported for now')
+
+      return new attesters.StandardAttester(attesterOptions)
+  }
+  
   /**
    * Assesses whether `this.url` leads to a non-web resource and, if so:
    * - Captures it via a curl behind our proxy

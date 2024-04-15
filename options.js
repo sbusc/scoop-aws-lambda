@@ -77,7 +77,7 @@ export const defaults = {
   cripPath: `${CONSTANTS.EXECUTABLES_PATH}crip`,
   // sbusc: added
   behaviorsPath: '',
-  tmpFolderPath: ''
+  tmpFolderPath: '',
 }
 
 /**

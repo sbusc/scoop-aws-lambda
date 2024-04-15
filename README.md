@@ -1,4 +1,4 @@
-# Scoop 🍨
+# Scoop, modified and optimized to run on AWS Lambda 🍨
 
 [![npm version](https://badge.fury.io/js/@harvard-lil%2Fscoop.svg)](https://badge.fury.io/js/@harvard-lil%2Fscoop) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com) [![Linting](https://github.com/harvard-lil/scoop/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/harvard-lil/scoop/actions/workflows/lint.yml) [![Test suite](https://github.com/harvard-lil/scoop/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/harvard-lil/scoop/actions/workflows/test.yml)
 
