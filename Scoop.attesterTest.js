@@ -15,6 +15,7 @@ let attesterOptions = {
 
 try {
   const capture = await Scoop.capture('https://soenke-busch.de', {
+    logLevel: 'trace',  
     screenshot: true,
     pdfSnapshot: true,
     captureVideoAsAttachment: false,
@@ -24,9 +25,11 @@ try {
     captureWindowY: 480,
     intercepter: 'AttesterProxy'
   }, attesterOptions)
-
+  if(capture.state !== Scoop.states.COMPLETE) {
+    throw new Error('Capture is not complete, state is ' + capture.state)
+  }
   const warc = await capture.toWARC()
   await fs.writeFile('archive.warc', Buffer.from(warc))
 } catch (err) {
-    console.error('Error on top level:', e);
+    console.error('Error on top level:', err);
 }
