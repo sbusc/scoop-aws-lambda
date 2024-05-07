@@ -43,5 +43,6 @@
  * //sbusc: added
  * @property {string} behaviorsPath - Custom path to the behaviors script to be used.
  * @property {string} tmpFolderPath - Custom path for temporary files
+ * @property {string} browser="StandardBrowser" - To select which browser launcher to use
  *
  */

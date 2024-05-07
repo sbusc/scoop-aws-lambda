@@ -23,6 +23,7 @@ import * as intercepters from './intercepters/index.js'
 import * as exporters from './exporters/index.js'
 import * as importers from './importers/index.js'
 import * as attesters from './attesters/index.js'
+import * as browserLaunchers from './browserLaunchers/index.js'
 import { filterOptions, defaults } from './options.js'
 import { formatErrorMessage } from './utils/formatErrorMessage.js'
 import { CustomHeaders } from './CustomHeaders.js'
@@ -164,6 +165,12 @@ export class Scoop {
   intercepter
 
   /**
+   * Reference to the intercepter chosen for capture.
+   * @type {browserLaunchers.abstractBrowser}
+   */
+  browsers
+
+  /**
    * A mirror of options.blocklist with IPs parsed for matching
    * @type {Array.<String|RegEx|Address4|Address6>}
    */
@@ -235,6 +242,7 @@ export class Scoop {
     this.log.setLevel(this.options.logLevel)
 
     this.intercepter = new intercepters[this.options.intercepter](this)
+    this.browserLauncher =  new browserLaunchers[this.options.browser](this)
   }
 
   /**
@@ -646,7 +654,7 @@ export class Scoop {
     }
         
     // sbusc: changed to playwright-core
-    this.#browser = await playwright.launchChromium(chromiumOptions)
+    this.#browser = await this.browserLauncher.launchBrowser(chromiumOptions)
       // Original code
     // this.#browser = await chromium.launch({...
 

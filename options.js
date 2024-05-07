@@ -78,6 +78,7 @@ export const defaults = {
   // sbusc: added
   behaviorsPath: '',
   tmpFolderPath: '',
+  browser: 'StandardBrowser',
 }
 
 /**
