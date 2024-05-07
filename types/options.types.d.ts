@@ -38,4 +38,5 @@ export interface ScoopOptions {
     cripPath?: string;
     behaviorsPath?: string; // Added by sbusc
     tmpFolderPath?: string; // Added by sbusc
+    browser?: string; // Added by sbusc
 }
