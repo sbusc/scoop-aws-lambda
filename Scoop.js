@@ -687,13 +687,6 @@ export class Scoop {
       await this.intercepter.setup(page)
     }
 
-    // page.on('response', async response => {
-    //   console.log("Received response through page.on('response')")
-    //   console.log("Headers: " + JSON.stringify(await response.allHeaders()))
-    //   console.log("Body: " + JSON.stringify(await response.body()))
-    // })
-    // await page.route('**', async route => {console.log("DEBUG: page.route"); await route.continue()});
-
     return page
   }
 

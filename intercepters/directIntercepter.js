@@ -75,7 +75,7 @@ export class DirectIntercepter extends ScoopIntercepter {
 
 
   async route(route) {
-    console.log("DEBUG: route: ")
+    //TODO add headers for attester
 
     await route.continue()
   }
@@ -89,7 +89,6 @@ export class DirectIntercepter extends ScoopIntercepter {
    * @param {http.ClientRequest} request
    */
   async onRequest(request) {
-    console.log("DEBUG: onRequest: ")
 
 
     if (this.recordExchanges) {
@@ -116,19 +115,11 @@ export class DirectIntercepter extends ScoopIntercepter {
    */
   async onResponse(response) {
     const request = await convertRequest(response.request())
-    console.log("DEBUG: onResponse: ")
-
-
-
-
-    // there will not be an exchange with this request if we're, for instance, not recording
-    // const exchange = this.exchanges.find(ex => ex.requestParsed === request)
 
     let exchange = undefined
 
     for(const ex of this.exchanges) {
       if(ex.requestParsed.method == request.method && ex.requestParsed.path == request.path) {
-        console.log("DEBUG: onResponse: Found exchange for request: " + JSON.stringify(ex.requestParsed))
         exchange = ex;
         break
       }
@@ -150,7 +141,7 @@ export class DirectIntercepter extends ScoopIntercepter {
   /**
  */
   onRequestFinished(response, request) {
-    console.log("DEBUG: onRequestFinished: ")
+
   }
 
 

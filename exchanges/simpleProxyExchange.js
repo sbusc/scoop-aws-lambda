@@ -105,7 +105,6 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
     this._request = null
     // this._cacheBody(val)
     this._requestParsed = val
-    console.log("DEBUG: requestParsed set to " + JSON.stringify(val))
     this.url = val.url
   }
 
