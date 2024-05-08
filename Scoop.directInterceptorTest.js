@@ -11,7 +11,7 @@ try {
     loadTimeout: 60 * 1000,
     captureWindowX: 320,
     captureWindowY: 480,
-    // intercepter: "DirectIntercepter",
+    intercepter: "DirectIntercepter",
     browser: "StandardBrowser" // for AWS Lambda, use "AwsLambdaBrowser"
   })
 
