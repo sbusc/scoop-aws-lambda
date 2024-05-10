@@ -3,6 +3,7 @@ import { Scoop } from './Scoop.js'
 
 let attesterOptions = {
   attesterType: 'standard',
+  timestampProof: 'chainId=0&12345',
   forwardProxy: { 
     host: 'localhost', 
     port: 8080, 
@@ -23,7 +24,8 @@ try {
     loadTimeout: 60 * 1000,
     captureWindowX: 320,
     captureWindowY: 480,
-    intercepter: 'AttesterProxy'
+    intercepter: 'AttesterProxy',
+    browser: "StandardBrowser" // for AWS Lambda, use "AwsLambdaBrowser"
   }, attesterOptions)
   if(capture.state !== Scoop.states.COMPLETE) {
     throw new Error('Capture is not complete, state is ' + capture.state)

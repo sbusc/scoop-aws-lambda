@@ -17,9 +17,10 @@ import EventEmitter from 'events';
  *
  */
 export class DirectIntercepter extends ScoopIntercepter {
+  usesPage = true
 
   /** @type {Page} */
-  #page
+  page
 
   /** @type {SimpleProxyExchange[]} */
   exchanges = []
@@ -28,19 +29,25 @@ export class DirectIntercepter extends ScoopIntercepter {
    * Initializes the proxy server
    * @returns {Promise<void>}
    */
-  async setup(page) {
-    this.#page = page
+  async setup() {
+   // Do nothing
+  }
+  /**
+   * Initializes the proxy server
+   * @returns {Promise<void>}
+   */
+  async setupPage(page) {
+    this.page = page
 
-    await this.#page.route('**', this.route.bind(this))
+    await this.page.route('**', this.route.bind(this))
 
-    this.#page
+    this.page
       .on('request', this.onRequest.bind(this))
       .on('response', this.onResponse.bind(this))
       .on('requestfailed', this.onRequestFailed.bind(this))
       .on('requestfinished', this.onRequestFinished.bind(this))
 
   }
-
   /**
    * @param {http.ClientRequest} request
    * @returns {Transform}
@@ -74,7 +81,7 @@ export class DirectIntercepter extends ScoopIntercepter {
   }
 
 
-  async route(route) {
+  async route(route, request) {
     //TODO add headers for attester
 
     await route.continue()
@@ -89,21 +96,7 @@ export class DirectIntercepter extends ScoopIntercepter {
    * @param {http.ClientRequest} request
    */
   async onRequest(request) {
-
-
-    if (this.recordExchanges) {
-      this.exchanges.push(new SimpleProxyExchange({ requestParsed: await convertRequest(request) }))
-    }
-
-    // const url = request.url().startsWith('/')
-    //   ? `https://${request.headers()['host']}${request.url()}`
-    //   : request.url()
-
-    // const rule = this.findMatchingBlocklistRule(url)
-
-    // if (rule) {
-    //   this.blockRequest(request, url, rule)
-    // }
+    this.addRequestToExchange(request);
   }
 
 
@@ -114,20 +107,9 @@ export class DirectIntercepter extends ScoopIntercepter {
    * @param {http.ClientRequest} request
    */
   async onResponse(response) {
-    const request = await convertRequest(response.request())
+    this.addResponseToExchange(response)
 
-    let exchange = undefined
 
-    for(const ex of this.exchanges) {
-      if(ex.requestParsed.method == request.method && ex.requestParsed.path == request.path) {
-        exchange = ex;
-        break
-      }
-    }
-
-    if (exchange) {
-      exchange.responseParsed = await convertResponse(response)
-    }
   }
 
 
@@ -211,6 +193,32 @@ export class DirectIntercepter extends ScoopIntercepter {
 
     return data
   }
+
+  async addRequestToExchange(request) {
+    if (this.recordExchanges) {
+      this.exchanges.push(new SimpleProxyExchange({ requestParsed: await convertRequest(request) }))
+    }
+
+  }
+
+  async addResponseToExchange(response) {
+
+    const request = await convertRequest(response.request())
+
+    let exchange = undefined
+
+    for (const ex of this.exchanges) {
+      if (ex.requestParsed.method == request.method && ex.requestParsed.path == request.path) {
+        exchange = ex;
+        break
+      }
+    }
+
+    if (exchange) {
+      exchange.responseParsed = await convertResponse(response)
+    }
+  }
+
 }
 
 async function convertRequest(request) {
@@ -244,7 +252,7 @@ async function convertResponse(response) {
   mockServerResponse.statusCode = status;
   mockServerResponse.statusMessage = statusMessage;
   mockServerResponse.headers = headers;
-  mockServerResponse.body = bodyBuffer; 
+  mockServerResponse.body = bodyBuffer;
 
 
   return mockServerResponse;

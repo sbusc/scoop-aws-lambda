@@ -25,6 +25,9 @@ export class StandardAttester extends Attester {
     
     setChromiumOptions(options) {
         if(this.forwardProxy && this.forwardProxy.host && this.forwardProxy.port) {
+            options.proxy = {
+                server: this.forwardProxy.host + ':' + this.forwardProxy.port
+            }
             if(this.forwardProxy.auth && this.forwardProxy.auth.type === 'basic') {
                 options.username = this.forwardProxy.auth.username
                 options.password = this.forwardProxy.auth.password

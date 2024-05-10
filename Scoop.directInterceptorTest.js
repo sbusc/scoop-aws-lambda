@@ -18,5 +18,5 @@ try {
   const warc = await capture.toWARC()
   await fs.writeFile('archive.warc', Buffer.from(warc))
 } catch (err) {
-  // ...
+    console.error('Error on top level:', err);
 }

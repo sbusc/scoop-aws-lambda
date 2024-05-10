@@ -639,9 +639,7 @@ export class Scoop {
     }
 
     // Initialize intercepter (proxy)
-    if (this.options.intercepter != "DirectIntercepter") {
-      await this.intercepter.setup()
-    }
+    await this.intercepter.setup()
 
     // Playwright init + pass proxy info to Chromium
     // sbusc: changed to playwright-core
@@ -654,6 +652,10 @@ export class Scoop {
     let chromiumOptions = {
       headless: options.headless
     }
+    if(this.attester){
+      this.attester.setChromiumOptions(chromiumOptions)
+    }
+
 
     // sbusc: changed to playwright-core
     this.#browser = await this.browserLauncher.launchBrowser(chromiumOptions)
@@ -662,6 +664,7 @@ export class Scoop {
 
     const context = await this.#browser.newContext({
       ...this.intercepter.contextOptions,
+      // ignoreHTTPSErrors: false,
       userAgent
     })
 
@@ -683,8 +686,8 @@ export class Scoop {
       clearTimeout(captureTimeoutTimer)
     })
 
-    if (this.options.intercepter == "DirectIntercepter") {
-      await this.intercepter.setup(page)
+    if (this.intercepter.usesPage) {
+      await this.intercepter.setupPage(page)
     }
 
     return page
@@ -885,7 +888,10 @@ export class Scoop {
     //
     // Favicon processing
     //
-
+    if(this.options.excludeFavicon){
+      this.log.info('Favicon capture is disabled')
+      return
+    }
     // Not needed if:
     // - No favicon URL found
     // - Favicon url is not an http(s) URL

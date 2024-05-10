@@ -2,7 +2,7 @@ import * as crypto from 'node:crypto'
 import { Transform } from 'node:stream'
 import { createServer } from '@harvard-lil/portal'
 
-import { ScoopProxy } from './ScoopProxy.js'
+import { DirectIntercepter } from './directIntercepter.js'
 import { ScoopProxyExchange } from '../exchanges/index.js'
 import { searchBlocklistFor } from '../utils/blocklist.js'
 import { CustomHeaders } from '../CustomHeaders.js'
@@ -12,87 +12,40 @@ import net from 'net' // eslint-disable-line
 
 /**
  * @class AttesterProxy
- * @extends ScoopProxy
+ * @extends DirectIntercepter
  *
  * @classdesc
  * TBD
  */
-export class AttesterProxy extends ScoopProxy {
-      /** @type {CustomHeaders} */
-    customHeaders
-    attester
-    log
+export class AttesterProxy extends DirectIntercepter {
+  /** @type {CustomHeaders} */
+  customHeaders
+  attester
+  log
 
 
-    constructor(options) {
-        super(options); // Pass options to the parent constructor
-        this.log = options.log
-        if(options.customHeaders)
-            this.customHeaders = options.customHeaders;
-          if(options.attester)  
-            this.attester = options.attester;
-      }
-    
-      onRequest(request, response) {
+  constructor(options) {
+    super(options); // Pass options to the parent constructor
+    this.log = options.log
+    if (options.customHeaders)
+      this.customHeaders = options.customHeaders;
+    if (options.attester)
+      this.attester = options.attester;
+  }
 
-
-        if (this.recordExchanges) {
-            this.exchanges.push(new ScoopProxyExchange({ requestParsed: request }))
-          }
-        // Full URL including the protocol, host, and path
-        const fullUrl = request.url.startsWith('/')
-          ? `https://${request.headers.host}${request.url}`
-          : request.url;
-    
-        // Modify the request to include the full URL as the path
-        request.url = fullUrl;
-    
-        // Setting the host to the forward proxy
-        const forwardProxyHost = this.attester.forwardProxy.host;
-        const forwardProxyPort = this.attester.forwardProxy.port;
-        this.customHeaders.getCustomHeaders('request').forEach((header) => {
-          request.headers[header.name] = header.value;
-        })
-    
-        // Assuming `http.request` options are being set here (or wherever the actual request is made)
-        const options = {
-          hostname: forwardProxyHost,
-          port: forwardProxyPort,
-          path: fullUrl,
-          method: request.method,
-          headers: request.headers
-        };
-    
-        // Create a new request to the forward proxy
-        const proxyReq = http.request(options, (proxyResponse) => {
-
-          const exchange = this.exchanges.find(ex => ex.requestParsed === request)
-          
-          if (exchange) {
-            exchange.responseParsed = proxyResponse
-            this.log.debug("Exchange found for " + request.url + " with headers " + JSON.stringify(request.headers))
-            this.log.debug("Response has headers "  + JSON.stringify(proxyResponse.headers))
-          }
-
-          // Pipe the proxy's response directly back to the original client
-          // proxyResponse.pipe(response);
+  async route(route, request) {
+    const headers = {
+      ...request.headers()
+    }
+    this.customHeaders.getCustomHeaders('request').forEach((header) => {
+      headers[header.name] = header.value;
+    })
+    await route.continue({headers})
+    this.addRequestToExchange(request);
+    }
+    async onRequest(request) {
+      // Do nothing - this is done in route() instead
+    }
   
-          // Optionally, handle proxy response data or log it
-          // proxyResponse.on('data', (chunk) => {
-              // console.log('Data received from proxy:', chunk.toString());
-          // });
-      });
-  
-      request.pipe(proxyReq);  // Forward the client's request body to the proxy
-  
-      proxyReq.on('error', (err) => {
-          this.log.error('Request to forward proxy failed:', err);
-          response.writeHead(502, 'Bad Gateway');
-          response.end('Failed to connect to the forward proxy');
-      });
-      }
 
-      onResponse (response, request) {
-        // override the super function with nothing
-      }
 }
