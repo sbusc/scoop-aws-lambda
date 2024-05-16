@@ -1,6 +1,5 @@
 
 import { AbstractBrowser } from './abstractBrowser.js'
-import  { chromium }  from 'playwright';
 
 /**
  * @class StandardBrowser
@@ -11,7 +10,9 @@ import  { chromium }  from 'playwright';
  *
  */
 export class StandardBrowser extends AbstractBrowser {
+  
    async launchBrowser(options) {
+    const { chromium } = await import('playwright');
     return chromium.launch(options)
   }
 }
