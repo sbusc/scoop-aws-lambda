@@ -20,7 +20,7 @@ try {
   // url = 'https://12freeze.it'
 
   const capture = await Scoop.capture(url, {
-    logLevel: 'debug',
+    logLevel: 'trace',
     screenshot: true,
     pdfSnapshot: true,
     captureVideoAsAttachment: false,

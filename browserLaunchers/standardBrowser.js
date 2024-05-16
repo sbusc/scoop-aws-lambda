@@ -1,6 +1,7 @@
 
 import { AbstractBrowser } from './abstractBrowser.js'
-import * as playwright from 'playwright-aws-lambda'
+import  { chromium }  from 'playwright';
+
 /**
  * @class StandardBrowser
  * @extends AbstractBrowser
@@ -11,6 +12,6 @@ import * as playwright from 'playwright-aws-lambda'
  */
 export class StandardBrowser extends AbstractBrowser {
    async launchBrowser(options) {
-    return playwright.launchChromium(options)
+    return chromium.launch(options)
   }
 }

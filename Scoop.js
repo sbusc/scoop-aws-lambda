@@ -10,7 +10,6 @@ import logPrefix from 'loglevel-plugin-prefix'
 import nunjucks from 'nunjucks'
 import { Address4, Address6 } from '@laverdet/beaugunderson-ip-address'
 import { v4 as uuidv4 } from 'uuid'
-import * as playwright from 'playwright-aws-lambda'
 import * as playwrightCore from 'playwright-core'
 import { getOSInfo } from 'get-os-info'
 
@@ -597,7 +596,7 @@ export class Scoop {
 
     //sbusc: Write all exchanges into a file - in debug mode
     if(this.options.logLevel == 'debug' || this.options.logLevel == 'trace'){
-      const debugLogFilname = "./debugLog.csv"
+      const debugLogFilname = this.captureTmpFolderPath + "debugLog.csv"
       await writeAllExchangesToFile(this.intercepter.exchanges, debugLogFilname)  
     }
 
@@ -720,7 +719,12 @@ export class Scoop {
     this.exchanges = this.intercepter.exchanges.concat(this.exchanges)
 
     this.log.info(`Clearing capture-specific temporary folder ${this.captureTmpFolderPath}`)
-    await rm(this.captureTmpFolderPath, { recursive: true, force: true })
+    if(this.options.logLevel == 'trace' || this.options.logLevel == 'debug'){
+      console.log("Keeping tmp files as logLevel is trace or debug")
+    }
+    else{
+      await rm(this.captureTmpFolderPath, { recursive: true, force: true })
+    }
   }
 
   /**
