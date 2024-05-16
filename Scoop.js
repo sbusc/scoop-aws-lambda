@@ -28,6 +28,7 @@ import { filterOptions, defaults } from './options.js'
 import { formatErrorMessage } from './utils/formatErrorMessage.js'
 import { CustomHeaders } from './CustomHeaders.js'
 import { StandardAttester } from './attesters/standardAttester.js'
+import { writeAllExchangesToFile } from './debugKit.js'
 
 nunjucks.configure(CONSTANTS.TEMPLATES_PATH)
 
@@ -396,7 +397,13 @@ export class Scoop {
         main: async (page) => {
           const url = 'file:///screenshot.png'
           const httpHeaders = new Headers({ 'content-type': 'image/png' })
-          const body = await page.screenshot({ fullPage: true, timeout: 5000 })
+          //sbusc: Changed this so it works on AWS lambda
+          // const body = await page.screenshot({ fullPage: true, timeout: 5000 })
+          await page.setViewportSize({
+            width: 1000,
+            height: 600,
+          });
+          const body = await page.screenshot()
           const isEntryPoint = true
           const description = `Capture Time Screenshot of ${this.url}`
 
@@ -474,7 +481,6 @@ export class Scoop {
       })
     }
 
-    //
     // Initialize capture
     //
     let page
@@ -586,6 +592,15 @@ export class Scoop {
       this.state = Scoop.states.COMPLETE
     }
 
+
+
+
+    //sbusc: Write all exchanges into a file - in debug mode
+    if(this.options.logLevel == 'debug' || this.options.logLevel == 'trace'){
+      const debugLogFilname = "./debugLog.csv"
+      await writeAllExchangesToFile(this.intercepter.exchanges, debugLogFilname)  
+    }
+
     await this.teardown()
   }
 
@@ -652,7 +667,7 @@ export class Scoop {
     let chromiumOptions = {
       headless: options.headless
     }
-    if(this.attester){
+    if (this.attester) {
       this.attester.setChromiumOptions(chromiumOptions)
     }
 
@@ -888,7 +903,7 @@ export class Scoop {
     //
     // Favicon processing
     //
-    if(this.options.excludeFavicon){
+    if (this.options.excludeFavicon) {
       this.log.info('Favicon capture is disabled')
       return
     }

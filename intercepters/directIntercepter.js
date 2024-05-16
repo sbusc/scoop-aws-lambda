@@ -30,7 +30,7 @@ export class DirectIntercepter extends ScoopIntercepter {
    * @returns {Promise<void>}
    */
   async setup() {
-   // Do nothing
+    // Do nothing
   }
   /**
    * Initializes the proxy server
@@ -107,7 +107,42 @@ export class DirectIntercepter extends ScoopIntercepter {
    * @param {http.ClientRequest} request
    */
   async onResponse(response) {
-    this.addResponseToExchange(response)
+
+    // this.addResponseToExchange(response)
+
+  }
+
+
+  /**
+ */
+  async onRequestFailed(request) {
+    const errorText = request.failure().errorText;
+    // case when the request is aborted
+    if (errorText == "net::ERR_ABORTED") {
+
+      const status = "000";
+      const statusMessage = "Aborted"
+      const body = errorText + "\n" +
+        "The network request was aborted by the client. Possible reasons include user navigation, JavaScript abort, or network issues."
+
+      const response = {
+        url: request.url(),
+        startLine: `HTTP/1.1 ${status}  ${statusMessage}`,
+        body: () => Buffer.from(body),
+        request: () => request,
+        status: () => status,
+        statusText: () => statusMessage,
+        headers: () => [],
+      }
+      this.addResponseToExchange(response)
+    }
+    else {
+      console.log("DEBUG: onRequestFailed: ")
+      console.log("URL: " + request.url())
+      console.log("Headers: " + JSON.stringify(request.headers()))
+      console.log("ERROR: " + request.failure().errorText)
+
+    }
 
 
   }
@@ -115,15 +150,16 @@ export class DirectIntercepter extends ScoopIntercepter {
 
   /**
  */
-  onRequestFailed(response, request) {
-    console.log("DEBUG: onRequestFailed: ")
-  }
-
-
-  /**
- */
-  onRequestFinished(response, request) {
-
+  async onRequestFinished(request) {
+    const response = await request.response()
+    if (response) {
+      this.addResponseToExchange(response)
+    }
+    else {
+      console.log("DEBUG: onRequestFinished with NOT REPONSE: ")
+      console.log("URL: " + request.url())
+      console.log("Headers: " + JSON.stringify(request.headers()))
+    }
   }
 
 
@@ -209,6 +245,19 @@ export class DirectIntercepter extends ScoopIntercepter {
 
     for (const ex of this.exchanges) {
       if (ex.requestParsed.method == request.method && ex.requestParsed.path == request.path) {
+        if(ex.requestParsed.url != request.url){
+          // console.log("Different URL for same path: " + request.url + " vs " + ex.requestParsed.url)
+
+          // Check if it is a redirect, if yes, add as separate request-response pair
+          if(ex.responseParsed?.statusCode && ex.responseParsed.statusCode == 301){
+            //Add as separate request-response pair
+            console.log("Previous redirect response found for request " + request.method + "  " + request.url)
+            console.log("with path " + request.path)
+            this.exchanges.push(new SimpleProxyExchange({ requestParsed: await convertRequest(response.request()), responseParsed: await convertResponse(response) }))
+            break;
+          }
+          continue
+        }
         exchange = ex;
         break
       }
@@ -243,7 +292,43 @@ async function convertResponse(response) {
   const status = await response.status();
   const statusMessage = await response.statusText()
   const headers = await response.headers();
-  const bodyArray = await response.body();
+  const request = response.request();
+  // console.log("++++++++++++++convertResponse++++++++++++++++")
+  // console.log("For request " + request.method() + "  " + request.url())
+  // console.log("with headers " + JSON.stringify(request.headers()))
+  // console.log("Status: " + status)
+
+  let bodyArray;
+  if (status == 301) {
+    bodyArray = Buffer.from('Redirected to ' + headers['location']);
+  }
+  else {
+    if (request.method() == 'HEAD') {
+      bodyArray = Buffer.from("No body, as a HEAD request was made.")
+    }
+    else if (request.method() == 'OPTIONS') {
+      bodyArray = Buffer.from("No body, as a OPTIONS request was made.")
+    }
+    else {
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // await response.finished();
+        bodyArray = await response.body();
+      }
+      catch (e) {
+        // console.log("Error for request " + request.method() + "  " + request.url())
+        // console.log("with headers " + JSON.stringify(request.headers()))
+        if (e.message.includes("No resource with given identifier found"))
+          bodyArray = Buffer.from('Playwright error: No body data found');
+        else {
+          console.log("Error occured: " + e.message)
+          bodyArray = Buffer.from('Playwright error: ' + e);
+        }
+      }
+    }
+
+  }
 
   //Convert body to Buffer
   let bodyBuffer = Buffer.from(bodyArray.buffer, bodyArray.byteOffset, bodyArray.byteLength);
@@ -257,40 +342,14 @@ async function convertResponse(response) {
 
   return mockServerResponse;
 }
-// class MockServerResponse extends Writable {
-//   constructor(options) {
-//       super(options);
-//       EventEmitter.call(this);  // Mixin EventEmitter
-//       this.headers = {};
-//       this.statusCode = 200;
-//       this.body = Buffer.alloc(0);
-//   }
 
-//   writeHead(statusCode, headers) {
-//       this.statusCode = statusCode;
-//       this.headers = headers;
-//       console.log('Status Code set:', statusCode);
-//       console.log('Headers set:', headers);
-//   }
-
-//   write(data, encoding, callback) {
-//       super.write(data, encoding, callback); // Properly use the stream write
-//       this.body = Buffer.concat([this.body, Buffer.isBuffer(data) ? data : Buffer.from(data)]);
-//       this.emit('data', data);  // Ensure 'data' event is emitted
-//       return true;
-//   }
-
-//   end(data, encoding, callback) {
-//       if (data) {
-//           this.write(data, encoding, () => {});
-//       }
-//       super.end(() => {  // Call super.end to ensure the stream is closed correctly
-//           this.emit('end');
-//           console.log('Response has been sent.');
-//           if (callback) callback();
-//       });
-//   }
-// }
-
-// Mix in the EventEmitter properties
-// Object.assign(MockServerResponse.prototype, EventEmitter.prototype);
+// checks if anything on the responses is different, except body length and content
+function compareResponses(r1, r2){
+  if(r1.statusCode != r2.statusCode)
+    return false
+  if(r1.statusMessage != r2.statusMessage)
+    return false
+  if(r1.headers.length != r2.headers.length)
+    return false
+  return true
+}

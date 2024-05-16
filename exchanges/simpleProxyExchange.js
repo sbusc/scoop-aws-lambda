@@ -16,7 +16,7 @@ const HTTP_VERSION = '1.1'
  * @param {object} [props={}] - Object containing any of the properties of `this`.
  */
 export class SimpleProxyExchange extends ScoopProxyExchange {
-  constructor (props = {}) {
+  constructor(props = {}) {
     super(props)
 
     const setters = Object.getOwnPropertyNames(this.constructor.prototype)
@@ -27,7 +27,7 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
     }
   }
 
-  get url () {
+  get url() {
     if (!this._url && this.requestParsed) {
       this.url = this.requestParsed.url.startsWith('/')
         ? `https://${this.requestParsed.headers.host}${this.requestParsed.url}`
@@ -37,7 +37,7 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
     return this._url
   }
 
-  set url (val) {
+  set url(val) {
     // throw on invalid url
     new URL(val) // eslint-disable-line
     this._url = val
@@ -50,11 +50,11 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _requestRaw = Buffer.from([])
 
   /** @type {?Buffer} */
-  get requestRaw () {
+  get requestRaw() {
     return this._requestRaw
   }
 
-  set requestRaw (val) {
+  set requestRaw(val) {
     this._request = null
     this._requestRaw = val
   }
@@ -66,11 +66,11 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _responseRaw = Buffer.from([])
 
   /** @type {?Buffer} */
-  get responseRaw () {
+  get responseRaw() {
     return this._responseRaw
   }
 
-  set responseRaw (val) {
+  set responseRaw(val) {
     this._response = null
     this._responseRaw = val
   }
@@ -81,7 +81,7 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
    * @param {IncomingMessage} message
    * @private
    */
-  _cacheBody (message) {
+  _cacheBody(message) {
     message.on('data', (data) => {
       message.body = message.body
         ? Buffer.concat([message.body, data])
@@ -96,12 +96,12 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _requestParsed
 
   /** @type {?IncomingMessage} */
-  get requestParsed () {
-    
+  get requestParsed() {
+
     return this._requestParsed
   }
 
-  set requestParsed (val) {
+  set requestParsed(val) {
     this._request = null
     // this._cacheBody(val)
     this._requestParsed = val
@@ -115,11 +115,11 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _responseParsed
 
   /** @type {?IncomingMessage} */
-  get responseParsed () {
+  get responseParsed() {
     return this._responseParsed
   }
 
-  set responseParsed (val) {
+  set responseParsed(val) {
     this._response = null
     // this._cacheBody(val)
     this._responseParsed = val
@@ -132,7 +132,7 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _request
 
   /** @type {?ScoopExchange~Message} */
-  get request () {
+  get request() {
     if (!this._request && this.requestParsed) {
       this.request = {
         url: this.url,
@@ -145,7 +145,7 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
     return this._request
   }
 
-  set request (val) {
+  set request(val) {
     this._request = val
   }
 
@@ -156,21 +156,43 @@ export class SimpleProxyExchange extends ScoopProxyExchange {
   _response
 
   /** @type {?ScoopExchange~Message} */
-  get response () {
+  get response() {
     // TODO: figure out why this.responseRaw may sometimes be an empty buffer of length 0
     if (!this._response) {
-      this.response = {
-        url: this.url,
-        startLine: `HTTP/${HTTP_VERSION} ${this.responseParsed.statusCode} ${this.responseParsed.statusMessage}`,
-        headers: new Headers(this.responseParsed.headers),
-        body: this.responseParsed.body,
-        bodyCombined: this.responseParsed.body
+      try {
+
+        //sbusc: abort if responseParsed is not set
+        if(!this.responseParsed)
+          return undefined
+
+        this.response = {
+          url: this.url,
+          startLine: `HTTP/${HTTP_VERSION} ${this.responseParsed.statusCode} ${this.responseParsed.statusMessage}`,
+          headers: new Headers(sanitizeHeaders(this.responseParsed.headers)),
+          body: this.responseParsed.body,
+          bodyCombined: this.responseParsed.body
+        }
+      }
+      catch (e) {
+        console.log("Error trying to build response object: " + e)
+        console.log("For url: " + this.url)
       }
     }
     return this._response
   }
 
-  set response (val) {
+  set response(val) {
     this._response = val
   }
+}
+function sanitizeHeaders(headers) {
+  const sanitizedHeaders = {};
+
+  for (const [key, value] of Object.entries(headers)) {
+    // Remove any '\n' or '\r' characters
+    const sanitizedValue = value.replace(/[\r\n]/g, '');
+    sanitizedHeaders[key] = sanitizedValue;
+  }
+
+  return sanitizedHeaders;
 }
