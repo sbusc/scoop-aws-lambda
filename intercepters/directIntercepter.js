@@ -249,7 +249,7 @@ export class DirectIntercepter extends ScoopIntercepter {
           // console.log("Different URL for same path: " + request.url + " vs " + ex.requestParsed.url)
 
           // Check if it is a redirect, if yes, add as separate request-response pair
-          if(ex.responseParsed?.statusCode && ex.responseParsed.statusCode == 301){
+          if(ex.responseParsed?.statusCode && (ex.responseParsed.statusCode == 301 || ex.responseParsed.statusCode == 308)){
             //Add as separate request-response pair
             console.log("Previous redirect response found for request " + request.method + "  " + request.url)
             console.log("with path " + request.path)
@@ -299,7 +299,7 @@ async function convertResponse(response) {
   // console.log("Status: " + status)
 
   let bodyArray;
-  if (status == 301) {
+  if (status == 301 || status == 308) {
     bodyArray = Buffer.from('Redirected to ' + headers['location']);
   }
   else {
