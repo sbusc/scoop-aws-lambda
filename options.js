@@ -79,6 +79,7 @@ export const defaults = {
   behaviorsPath: '',
   tmpFolderPath: '',
   browser: 'StandardBrowser',
+  excludeFavicon: true,
 }
 
 /**

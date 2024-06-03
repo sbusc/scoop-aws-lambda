@@ -11,11 +11,12 @@ try {
     loadTimeout: 60 * 1000,
     captureWindowX: 320,
     captureWindowY: 480,
+    intercepter: "DirectIntercepter",
     browser: "StandardBrowser" // for AWS Lambda, use "AwsLambdaBrowser"
   })
 
   const warc = await capture.toWARC()
   await fs.writeFile('archive.warc', Buffer.from(warc))
 } catch (err) {
-  // ...
+    console.error('Error on top level:', err);
 }

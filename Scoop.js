@@ -10,7 +10,6 @@ import logPrefix from 'loglevel-plugin-prefix'
 import nunjucks from 'nunjucks'
 import { Address4, Address6 } from '@laverdet/beaugunderson-ip-address'
 import { v4 as uuidv4 } from 'uuid'
-import * as playwright from 'playwright-aws-lambda'
 import * as playwrightCore from 'playwright-core'
 import { getOSInfo } from 'get-os-info'
 
@@ -28,6 +27,7 @@ import { filterOptions, defaults } from './options.js'
 import { formatErrorMessage } from './utils/formatErrorMessage.js'
 import { CustomHeaders } from './CustomHeaders.js'
 import { StandardAttester } from './attesters/standardAttester.js'
+import { writeAllExchangesToFile } from './debugKit.js'
 
 nunjucks.configure(CONSTANTS.TEMPLATES_PATH)
 
@@ -121,7 +121,7 @@ export class Scoop {
    * Returns a copy of Scoop's default settings.
    * @type {ScoopOptions}
    */
-  static get defaults () {
+  static get defaults() {
     return Object.assign({}, defaults)
   }
 
@@ -216,16 +216,16 @@ export class Scoop {
    * @param {?ScoopOptions} [options={}] - See {@link ScoopOptions}.
    * @param {?attesters.AttesterOptions} attesterOptions - See {@link AttesterOptions}.
    */
-  constructor (url, options = {}, attesterOptions) {
+  constructor(url, options = {}, attesterOptions) {
     this.options = filterOptions(options)
     this.blocklist = this.options.blocklist.map(castBlocklistMatcher)
     this.url = this.filterUrl(url)
     this.targetUrlResolved = this.url
 
-    
+
     //sbusc: added
     this.customHeaders = new CustomHeaders()
-    if(attesterOptions) {
+    if (attesterOptions) {
       this.attester = Scoop.loadAttester(attesterOptions)
       this.attester.addCustomHeaders(this.customHeaders);
     }
@@ -233,7 +233,7 @@ export class Scoop {
     // Logging setup (level, output formatting)
     logPrefix.reg(this.log)
     logPrefix.apply(log, {
-      format (level, _name, timestamp) {
+      format(level, _name, timestamp) {
         const timestampColor = CONSTANTS.LOGGING_COLORS.DEFAULT
         const msgColor = CONSTANTS.LOGGING_COLORS[level.toUpperCase()]
         return `${timestampColor(`[${timestamp}]`)} ${msgColor(level)}`
@@ -242,7 +242,7 @@ export class Scoop {
     this.log.setLevel(this.options.logLevel)
 
     this.intercepter = new intercepters[this.options.intercepter](this)
-    this.browserLauncher =  new browserLaunchers[this.options.browser](this)
+    this.browserLauncher = new browserLaunchers[this.options.browser](this)
   }
 
   /**
@@ -253,7 +253,7 @@ export class Scoop {
    * @param {attesters.AttesterOptions} attesterOptions
    * @returns {Promise<Scoop>}
    */
-  static async capture (url, options, attesterOptions) {
+  static async capture(url, options, attesterOptions) {
     const instance = new Scoop(url, options, attesterOptions)
     await instance.capture()
     return instance
@@ -264,7 +264,7 @@ export class Scoop {
    * @returns {Promise<void>}
    * @private
    */
-  async capture () {
+  async capture() {
     const options = this.options
 
     /**
@@ -396,7 +396,13 @@ export class Scoop {
         main: async (page) => {
           const url = 'file:///screenshot.png'
           const httpHeaders = new Headers({ 'content-type': 'image/png' })
-          const body = await page.screenshot({ fullPage: true, timeout: 5000 })
+          //sbusc: Changed this so it works on AWS lambda
+          // const body = await page.screenshot({ fullPage: true, timeout: 5000 })
+          await page.setViewportSize({
+            width: 1000,
+            height: 600,
+          });
+          const body = await page.screenshot()
           const isEntryPoint = true
           const description = `Capture Time Screenshot of ${this.url}`
 
@@ -474,16 +480,15 @@ export class Scoop {
       })
     }
 
-    //
     // Initialize capture
     //
     let page
 
     try {
       page = await this.setup()
-      this.log.info(`Scoop ${CONSTANTS.VERSION} was initialized with the following options:`)
+      this.log.info(`Scoop-aws-lambda ${CONSTANTS.VERSION} was initialized with the following options:`)
       this.log.info(options)
-      this.log.info(`🍨 Starting capture of ${this.url}.`)
+      this.log.info(`Starting capture of ${this.url}.`)
       this.state = Scoop.states.CAPTURE
     } catch (err) {
       this.log.error(`An error occurred during capture setup (${formatErrorMessage(err)}).`)
@@ -565,10 +570,10 @@ export class Scoop {
         ])
 
         clearInterval(stateCheckInterval) // Clear "state checker" interval in case it is still running
-      //
-      // On error:
-      // - Only deliver full trace if error is not due to time / size limit reached.
-      //
+        //
+        // On error:
+        // - Only deliver full trace if error is not due to time / size limit reached.
+        //
       } catch (err) {
         if (this.state === Scoop.states.PARTIAL) {
           this.log.warn(`STEP [${i + 1}/${steps.length}]: ${step.name} - ended due to max time or size reached.`)
@@ -586,6 +591,15 @@ export class Scoop {
       this.state = Scoop.states.COMPLETE
     }
 
+
+
+
+    //sbusc: Write all exchanges into a file - in debug mode
+    if(this.options.logLevel == 'debug' || this.options.logLevel == 'trace'){
+      const debugLogFilname = this.captureTmpFolderPath + "debugLog.csv"
+      await writeAllExchangesToFile(this.intercepter.exchanges, debugLogFilname)  
+    }
+
     await this.teardown()
   }
 
@@ -594,7 +608,7 @@ export class Scoop {
    *
    * @returns {Promise<Page>} Resolves to a Playwright [Page]{@link https://playwright.dev/docs/api/class-page} object
    */
-  async setup () {
+  async setup() {
     this.startedAt = new Date()
     this.state = Scoop.states.SETUP
     const options = this.options
@@ -652,14 +666,19 @@ export class Scoop {
     let chromiumOptions = {
       headless: options.headless
     }
-        
+    if (this.attester) {
+      this.attester.setChromiumOptions(chromiumOptions)
+    }
+
+
     // sbusc: changed to playwright-core
     this.#browser = await this.browserLauncher.launchBrowser(chromiumOptions)
-      // Original code
+    // Original code
     // this.#browser = await chromium.launch({...
 
     const context = await this.#browser.newContext({
       ...this.intercepter.contextOptions,
+      // ignoreHTTPSErrors: false,
       userAgent
     })
 
@@ -681,6 +700,10 @@ export class Scoop {
       clearTimeout(captureTimeoutTimer)
     })
 
+    if (this.intercepter.usesPage) {
+      await this.intercepter.setupPage(page)
+    }
+
     return page
   }
 
@@ -688,7 +711,7 @@ export class Scoop {
    * Tears down Playwright, intercepter, and capture-specific temporary folder.
    * @returns {Promise<void>}
    */
-  async teardown () {
+  async teardown() {
     this.log.info('Closing browser and intercepter')
     await this.intercepter.teardown()
     await this.#browser.close()
@@ -696,7 +719,12 @@ export class Scoop {
     this.exchanges = this.intercepter.exchanges.concat(this.exchanges)
 
     this.log.info(`Clearing capture-specific temporary folder ${this.captureTmpFolderPath}`)
-    await rm(this.captureTmpFolderPath, { recursive: true, force: true })
+    if(this.options.logLevel == 'trace' || this.options.logLevel == 'debug'){
+      console.log("Keeping tmp files as logLevel is trace or debug")
+    }
+    else{
+      await rm(this.captureTmpFolderPath, { recursive: true, force: true })
+    }
   }
 
   /**
@@ -707,14 +735,14 @@ export class Scoop {
    * @returns {attesters.Attester} - The attester instance
    * @private
    */
-  static loadAttester (attesterOptions) {
+  static loadAttester(attesterOptions) {
     // sbusc
-    if(attesterOptions.attesterType != 'standard') 
+    if (attesterOptions.attesterType != 'standard')
       throw new Error('Only standard attester is supported for now')
 
-      return new attesters.StandardAttester(attesterOptions)
+    return new attesters.StandardAttester(attesterOptions)
   }
-  
+
   /**
    * Assesses whether `this.url` leads to a non-web resource and, if so:
    * - Captures it via a curl behind our proxy
@@ -726,7 +754,7 @@ export class Scoop {
    * @returns {Promise<void>}
    * @private
    */
-  async #detectAndCaptureNonWebContent (page) {
+  async #detectAndCaptureNonWebContent(page) {
     /** @type {?string} */
     let contentType = null
 
@@ -865,7 +893,7 @@ export class Scoop {
    * @returns {Promise<void>}
    * @private
    */
-  async #capturePageInfo (page) {
+  async #capturePageInfo(page) {
     this.pageInfo = await page.evaluate(() => {
       return {
         title: document.title,
@@ -879,7 +907,10 @@ export class Scoop {
     //
     // Favicon processing
     //
-
+    if (this.options.excludeFavicon) {
+      this.log.info('Favicon capture is disabled')
+      return
+    }
     // Not needed if:
     // - No favicon URL found
     // - Favicon url is not an http(s) URL
@@ -934,7 +965,7 @@ export class Scoop {
    * @returns {Promise<void>}
    * @private
    */
-  async #captureVideoAsAttachment () {
+  async #captureVideoAsAttachment() {
     const videoFilename = `${this.captureTmpFolderPath}video-extracted-%(autonumber)d.mp4`
     const ytDlpPath = this.options.ytDlpPath
 
@@ -1117,7 +1148,7 @@ export class Scoop {
    * @param {Page} page - A Playwright [Page]{@link https://playwright.dev/docs/api/class-page} object
    * @returns {Promise<void>}
    */
-  async #takePdfSnapshot (page) {
+  async #takePdfSnapshot(page) {
     let pdf = null
     let dimensions = null
 
@@ -1154,7 +1185,7 @@ export class Scoop {
    * @returns {Promise<void>}
    * @private
    */
-  async #captureCertificatesAsAttachment () {
+  async #captureCertificatesAsAttachment() {
     const { captureCertificatesAsAttachmentTimeout, cripPath } = this.options
 
     //
@@ -1251,7 +1282,7 @@ export class Scoop {
    * @param {Page} page - A Playwright [Page]{@link https://playwright.dev/docs/api/class-page} object
    * @private
    */
-  async #captureProvenanceInfo (page) {
+  async #captureProvenanceInfo(page) {
     let captureIp = 'UNKNOWN'
     const osInfo = await getOSInfo()
     let ytDlpHash = ''
@@ -1355,7 +1386,7 @@ export class Scoop {
    * @param {string} [description='']
    * @returns {boolean} true if generated exchange is successfully added
    */
-  addGeneratedExchange (url, headers, body, isEntryPoint = false, description = '') {
+  addGeneratedExchange(url, headers, body, isEntryPoint = false, description = '') {
     // Check maxCaptureSize and capture state unless `attachmentsBypassLimits` flag was raised.
     if (this.options.attachmentsBypassLimits === false) {
       const remainingSpace = this.options.maxCaptureSize - this.intercepter.byteLength
@@ -1392,7 +1423,7 @@ export class Scoop {
    *
    * @param {string} url
    */
-  filterUrl (url) {
+  filterUrl(url) {
     let pass = true
 
     // Is the url "valid"? (format)
@@ -1429,7 +1460,7 @@ export class Scoop {
    * Generated exchanges = anything generated directly by Scoop (PDF snapshot, full-page screenshot, videos ...) as opposed to naturally intercepted.
    * @returns {Object.<string, ScoopGeneratedExchange>}
    */
-  extractGeneratedExchanges () {
+  extractGeneratedExchanges() {
     if (![Scoop.states.COMPLETE, Scoop.states.PARTIAL].includes(this.state)) {
       throw new Error('Cannot export generated exchanges on a pending or failed capture.')
     }
@@ -1451,7 +1482,7 @@ export class Scoop {
    * @param {string} zipPath - Path to .wacz file.
    * @returns {Promise<Scoop>}
    */
-  static async fromWACZ (zipPath) {
+  static async fromWACZ(zipPath) {
     return await importers.WACZToScoop(zipPath)
   }
 
@@ -1460,7 +1491,7 @@ export class Scoop {
    * @param {boolean} [gzip=false]
    * @returns {Promise<ArrayBuffer>}
    */
-  async toWARC (gzip = false) {
+  async toWARC(gzip = false) {
     return await exporters.scoopToWARC(this, Boolean(gzip))
   }
 
@@ -1472,7 +1503,7 @@ export class Scoop {
    * @param {string} signingServer.token - Optional token to be passed to the signing server via the Authorization header
    * @returns {Promise<ArrayBuffer>}
    */
-  async toWACZ (includeRaw = true, signingServer) {
+  async toWACZ(includeRaw = true, signingServer) {
     return await exporters.scoopToWACZ(this, includeRaw, signingServer)
   }
 
@@ -1502,7 +1533,7 @@ export class Scoop {
    * Generates and returns a summary of the current capture, regardless of its state.
    * @returns {Promise<ScoopCaptureSummary>}
    */
-  async summary () {
+  async summary() {
     const summary = {
       state: this.state,
       states: Object.keys(Scoop.states), // So summary.states[summary.state] = 'NAME-OF-STATE'
